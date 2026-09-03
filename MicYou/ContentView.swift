@@ -66,8 +66,14 @@ struct ContentView: View {
     }
 
     private var statusColor: Color {
-        if model.muted { return .orange }
-        switch model.state { case .streaming: .green; case .failed: .red; default: .accentColor }
+        if model.muted { return Color.orange }
+        switch model.state {
+        case .streaming:
+            return Color.green
+        case .failed:
+            return Color.red
+        default:
+            return Color.accentColor
+        }
     }
 }
-
