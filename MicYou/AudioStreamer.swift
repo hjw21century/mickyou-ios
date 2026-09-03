@@ -32,6 +32,9 @@ final class AudioStreamer {
         try session.setPreferredSampleRate(48_000)
         try session.setPreferredIOBufferDuration(0.01)
         try session.setActive(true)
+        guard !session.currentRoute.inputs.isEmpty else {
+            throw StreamError.noAudioInput
+        }
         sessionID = UInt64(Date().timeIntervalSince1970 * 1000)
 
         let tcp = NWConnection(to: endpoint, using: .tcp)
@@ -88,8 +91,14 @@ final class AudioStreamer {
     private func startCapture() throws {
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
+        guard format.sampleRate > 0, format.channelCount > 0 else {
+            throw StreamError.invalidAudioFormat
+        }
         sampleRate = UInt32(format.sampleRate.rounded())
-        input.installTap(onBus: 0, bufferSize: 480, format: format) { [weak self] buffer, _ in
+        // Passing a stale hardware format can trigger an AVAudioEngine Objective-C
+        // assertion instead of a catchable Swift error. `nil` lets the input node
+        // provide its current native format after the audio session is activated.
+        input.installTap(onBus: 0, bufferSize: 480, format: nil) { [weak self] buffer, _ in
             // AVAudioEngine owns and may reuse the tap buffer after this callback returns.
             self?.process(buffer)
         }
@@ -190,10 +199,13 @@ final class AudioStreamer {
 }
 
 enum StreamError: LocalizedError {
-    case microphoneDenied, handshakeFailed, invalidEndpoint, connectionClosed
+    case microphoneDenied, noAudioInput, invalidAudioFormat
+    case handshakeFailed, invalidEndpoint, connectionClosed
     var errorDescription: String? {
         switch self {
         case .microphoneDenied: "未获得麦克风权限"
+        case .noAudioInput: "没有可用的麦克风输入，请检查系统声音输入设置"
+        case .invalidAudioFormat: "麦克风返回了无效的音频格式，请重新连接输入设备"
         case .handshakeFailed: "服务端握手失败，请确认版本兼容"
         case .invalidEndpoint: "无法解析服务端地址"
         case .connectionClosed: "服务端已断开连接"
