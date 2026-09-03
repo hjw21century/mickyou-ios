@@ -65,7 +65,7 @@ final class AudioStreamer {
     }
 
     private func connect(_ connection: NWConnection) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var completed = false
             connection.stateUpdateHandler = { state in
                 guard !completed else { return }
@@ -169,7 +169,7 @@ final class AudioStreamer {
     }
 
     private func send(_ data: Data, on connection: NWConnection) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             connection.send(content: data, completion: .contentProcessed { error in
                 if let error { continuation.resume(throwing: error) } else { continuation.resume() }
             })
@@ -177,7 +177,7 @@ final class AudioStreamer {
     }
 
     private func receiveExactly(_ count: Int, on connection: NWConnection) async throws -> Data {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data, Error>) in
             connection.receive(minimumIncompleteLength: count, maximumLength: count) { data, _, _, error in
                 if let error { continuation.resume(throwing: error) }
                 else if let data, data.count == count { continuation.resume(returning: data) }
