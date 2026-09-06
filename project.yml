@@ -19,14 +19,13 @@ targets:
     type: application
     platform: iOS
     sources: [MicYou]
-    info:
-      path: MicYou/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.lanrhyme.micyou.ios
         PRODUCT_NAME: MicYou
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: MicYou/Info.plist
         ONLY_ACTIVE_ARCH: NO
     scheme:
       testTargets: [MicYouTests]

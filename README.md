@@ -10,6 +10,13 @@
 2. 在本目录执行 `xcodegen generate`。
 3. 打开 `MicYou.xcodeproj`，选择自己的开发团队和真机后运行。
 
+更新 `project.yml` 或 `Info.plist` 后，请删除旧工程再重新生成，确保麦克风和局域网隐私说明被打包：
+
+```bash
+rm -rf MicYou.xcodeproj
+xcodegen generate
+```
+
 ### Intel Mac
 
 工程同时支持 Intel Mac 上的 `x86_64` iOS 模拟器和 iPhone 真机的 `arm64` 构建，无第三方二进制依赖。Intel Homebrew 的默认目录通常是 `/usr/local`；如果终端找不到 XcodeGen，可执行：
