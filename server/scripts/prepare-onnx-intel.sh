@@ -12,6 +12,6 @@ tar -xzf "$archive/ort.tgz" -C "$archive"
 ort="$archive/onnxruntime-osx-x86_64-1.23.2"
 mkdir -p src-tauri/libs src-tauri/resources
 cp -L "$ort/lib/libonnxruntime.dylib" src-tauri/libs/libonnxruntime.dylib
-lipo -verify_arch x86_64 src-tauri/libs/libonnxruntime.dylib
+lipo src-tauri/libs/libonnxruntime.dylib -verify_arch x86_64
 cp "$ort/LICENSE" src-tauri/resources/ONNX-Runtime-LICENSE.txt
 cp "$ort/ThirdPartyNotices.txt" src-tauri/resources/ONNX-Runtime-ThirdPartyNotices.txt
