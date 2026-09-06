@@ -2,6 +2,10 @@ import XCTest
 @testable import MicYou
 
 final class ProtocolCodecTests: XCTestCase {
+    func testConnectDeclaresSpeakerMode() {
+        XCTAssertEqual(Array(MicYouProtocol.connect(sessionID: 1)), [0x12, 0x04, 0x08, 0x01, 0x10, 0x01])
+    }
+
     func testTCPFrameUsesBigEndianHeader() {
         let frame = MicYouProtocol.tcpFrame(Data([1, 2, 3]))
         XCTAssertEqual(Array(frame.prefix(8)), [0x4d, 0x69, 0x63, 0x59, 0, 0, 0, 3])
@@ -16,6 +20,17 @@ final class ProtocolCodecTests: XCTestCase {
         let payload = MicYouProtocol.audio(sequence: 1, timestamp: 2, sessionID: 3,
                                            pcm: Data(repeating: 0, count: 960), sampleRate: 48_000)
         XCTAssertLessThanOrEqual(MicYouProtocol.udpFrame(payload).count, 1472)
+    }
+
+    func testIncomingPCMCanBeDecodedForSpeakerPlayback() {
+        let pcm = Data([0x34, 0x12, 0x78, 0x56])
+        let wrapper = MicYouProtocol.audio(sequence: 1, timestamp: 2, sessionID: 3,
+                                           pcm: pcm, sampleRate: 48_000)
+        let decoded = MicYouProtocol.controlMessage(wrapper).audio
+
+        XCTAssertEqual(decoded?.pcm, pcm)
+        XCTAssertEqual(decoded?.sampleRate, 48_000)
+        XCTAssertEqual(decoded?.channels, 1)
     }
 
     func testBigEndianReadUsesOffsetRelativeToDataStartIndex() {

@@ -8,33 +8,25 @@ final class AudioStreamer {
     var onMuted: ((Bool) -> Void)?
 
     private let engine = AVAudioEngine()
+    private let player = AVAudioPlayerNode()
     private let networkQueue = DispatchQueue(label: "com.lanrhyme.micyou.network")
     private var tcp: NWConnection?
-    private var udp: NWConnection?
     private var receiveBuffer = Data()
-    private var sequence: UInt32 = 0
     private var sessionID: UInt64 = 0
-    private var sampleRate: UInt32 = 48_000
     private var serverMuted = false
     private var running = false
-    private var tapInstalled = false
 
     func start(endpoint: NWEndpoint) async throws {
         guard !running else { return }
         await state(.connecting)
-        sequence = 0
         serverMuted = false
-        let granted = await AVAudioApplication.requestRecordPermission()
-        guard granted else { throw StreamError.microphoneDenied }
 
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.record, mode: .measurement, options: [.allowBluetoothHFP])
+        try session.setCategory(.playback, mode: .default)
         try session.setPreferredSampleRate(48_000)
         try session.setPreferredIOBufferDuration(0.01)
         try session.setActive(true)
-        guard !session.currentRoute.inputs.isEmpty else {
-            throw StreamError.noAudioInput
-        }
+        try startPlayback()
         sessionID = UInt64(Date().timeIntervalSince1970 * 1000)
 
         let tcp = NWConnection(to: endpoint, using: .tcp)
@@ -42,26 +34,17 @@ final class AudioStreamer {
         try await connect(tcp)
         try await handshake(tcp)
 
-        let udpEndpoint = try udpEndpoint(from: endpoint)
-        let udp = NWConnection(to: udpEndpoint, using: .udp)
-        self.udp = udp
-        udp.start(queue: networkQueue)
-
         tcp.send(content: MicYouProtocol.tcpFrame(MicYouProtocol.connect(sessionID: sessionID)), completion: .contentProcessed { _ in })
         running = true
         receiveControl()
-        try startCapture()
         await state(.streaming)
     }
 
     func stop() {
         running = false
-        if tapInstalled {
-            engine.inputNode.removeTap(onBus: 0)
-            tapInstalled = false
-        }
+        player.stop()
         engine.stop()
-        tcp?.cancel(); udp?.cancel(); tcp = nil; udp = nil
+        tcp?.cancel(); tcp = nil
         receiveBuffer.removeAll(keepingCapacity: false)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         Task { await state(.idle) }
@@ -88,70 +71,43 @@ final class AudioStreamer {
         guard String(data: response, encoding: .utf8) == "MicYouCheck2" else { throw StreamError.handshakeFailed }
     }
 
-    private func startCapture() throws {
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        guard format.sampleRate > 0, format.channelCount > 0 else {
+    private func startPlayback() throws {
+        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                         sampleRate: 48_000,
+                                         channels: 1,
+                                         interleaved: false) else {
             throw StreamError.invalidAudioFormat
         }
-        guard let captureFormat = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: format.sampleRate,
-            channels: format.channelCount,
-            interleaved: false
-        ) else {
-            throw StreamError.invalidAudioFormat
-        }
-        sampleRate = UInt32(format.sampleRate.rounded())
-        // Keep the hardware sample rate and channel count, but normalize the
-        // memory layout so every channel has its own Float32 pointer.
-        input.installTap(onBus: 0, bufferSize: 480, format: captureFormat) { [weak self] buffer, _ in
-            // AVAudioEngine owns and may reuse the tap buffer after this callback returns.
-            self?.process(buffer)
-        }
-        tapInstalled = true
+        if !engine.attachedNodes.contains(player) { engine.attach(player) }
+        engine.disconnectNodeOutput(player)
+        engine.connect(player, to: engine.mainMixerNode, format: format)
         engine.prepare()
         try engine.start()
+        player.play()
     }
 
-    private func process(_ buffer: AVAudioPCMBuffer) {
-        guard running, !serverMuted, let channels = buffer.floatChannelData else { return }
-        let frames = Int(buffer.frameLength), channelCount = Int(buffer.format.channelCount)
-        guard frames > 0, channelCount > 0 else { return }
-        var pcm = Data(capacity: frames * 2)
+    private func play(_ packet: SpeakerAudioPacket) {
+        guard running, !serverMuted, packet.sampleRate == 48_000, packet.channels == 1,
+              packet.pcm.count >= 2, packet.pcm.count.isMultiple(of: 2),
+              let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                         sampleRate: 48_000,
+                                         channels: 1,
+                                         interleaved: false),
+              let buffer = AVAudioPCMBuffer(pcmFormat: format,
+                                            frameCapacity: AVAudioFrameCount(packet.pcm.count / 2)),
+              let output = buffer.floatChannelData?[0] else { return }
+        buffer.frameLength = buffer.frameCapacity
+        let bytes = [UInt8](packet.pcm)
         var peak: Float = 0
-        for index in 0..<frames {
-            var sample: Float = 0
-            for channel in 0..<channelCount {
-                let value = channels[channel][index]
-                // Some audio routes briefly emit non-finite samples while they
-                // start. Converting NaN or infinity to Int16 traps in Swift.
-                if value.isFinite { sample += value }
-            }
-            sample /= Float(channelCount)
-            if !sample.isFinite { sample = 0 }
-            sample = max(-1, min(1, sample))
+        for frame in 0..<Int(buffer.frameLength) {
+            let byteOffset = frame * 2
+            let raw = UInt16(bytes[byteOffset]) | (UInt16(bytes[byteOffset + 1]) << 8)
+            let sample = Float(Int16(bitPattern: raw)) / 32_768
+            output[frame] = sample
             peak = max(peak, abs(sample))
-            var int16 = Int16(sample * Float(Int16.max)).littleEndian
-            withUnsafeBytes(of: &int16) { pcm.append(contentsOf: $0) }
         }
-        let maxBytes = 960
-        var offset = 0
-        while offset < pcm.count {
-            let end = min(offset + maxBytes, pcm.count)
-            sendAudio(Data(pcm[offset..<end])); offset = end
-        }
+        player.scheduleBuffer(buffer)
         DispatchQueue.main.async { [weak self] in self?.onLevel?(peak) }
-    }
-
-    private func sendAudio(_ pcm: Data) {
-        guard let udp else { return }
-        let payload = MicYouProtocol.audio(sequence: sequence, timestamp: UInt64(Date().timeIntervalSince1970 * 1000),
-                                           sessionID: sessionID, pcm: pcm, sampleRate: sampleRate)
-        sequence &+= 1
-        udp.send(content: MicYouProtocol.udpFrame(payload), completion: .contentProcessed { [weak self] error in
-            if let error { Task { await self?.state(.failed(error.localizedDescription)) } }
-        })
     }
 
     private func receiveControl() {
@@ -181,16 +137,7 @@ final class AudioStreamer {
             if let ping = control.ping, let tcp {
                 tcp.send(content: MicYouProtocol.tcpFrame(MicYouProtocol.pong(timestamp: ping)), completion: .contentProcessed { _ in })
             }
-        }
-    }
-
-    private func udpEndpoint(from endpoint: NWEndpoint) throws -> NWEndpoint {
-        switch endpoint {
-        case let .hostPort(host, port):
-            let raw = port.rawValue
-            guard raw < UInt16.max, let udpPort = NWEndpoint.Port(rawValue: raw + 1) else { throw StreamError.invalidEndpoint }
-            return .hostPort(host: host, port: udpPort)
-        default: throw StreamError.invalidEndpoint
+            if let audio = control.audio { play(audio) }
         }
     }
 
@@ -216,13 +163,10 @@ final class AudioStreamer {
 }
 
 enum StreamError: LocalizedError {
-    case microphoneDenied, noAudioInput, invalidAudioFormat
-    case handshakeFailed, invalidEndpoint, connectionClosed
+    case invalidAudioFormat, handshakeFailed, invalidEndpoint, connectionClosed
     var errorDescription: String? {
         switch self {
-        case .microphoneDenied: "未获得麦克风权限"
-        case .noAudioInput: "没有可用的麦克风输入，请检查系统声音输入设置"
-        case .invalidAudioFormat: "麦克风返回了无效的音频格式，请重新连接输入设备"
+        case .invalidAudioFormat: "无法创建扬声器播放格式"
         case .handshakeFailed: "服务端握手失败，请确认版本兼容"
         case .invalidEndpoint: "无法解析服务端地址"
         case .connectionClosed: "服务端已断开连接"

@@ -4,8 +4,10 @@ enum MicYouProtocol {
     static let tcpMagic: UInt32 = 0x4D696359
     static let udpMagic: UInt32 = 0x4D696355
 
-    static func connect(sessionID: UInt64) -> Data {
-        wrapper(field: 2, payload: fieldVarint(1, sessionID))
+    static func connect(sessionID: UInt64, speakerMode: Bool = true) -> Data {
+        var payload = fieldVarint(1, sessionID)
+        if speakerMode { payload += fieldVarint(2, 1) }
+        return wrapper(field: 2, payload: payload)
     }
 
     static func pong(timestamp: UInt64) -> Data {
@@ -44,16 +46,42 @@ enum MicYouProtocol {
         return result
     }
 
-    static func controlMessage(_ data: Data) -> (muted: Bool?, ping: UInt64?) {
+    static func controlMessage(_ data: Data) -> (muted: Bool?, ping: UInt64?, audio: SpeakerAudioPacket?) {
         var reader = ProtoReader(data)
         var muted: Bool?
         var ping: UInt64?
+        var audio: SpeakerAudioPacket?
         while let (field, wire) = reader.nextTag() {
             guard wire == 2, let nested = reader.readBytes() else { reader.skip(wire); continue }
             if field == 3 { muted = ProtoReader.firstVarint(nested, field: 1).map { $0 != 0 } }
             if field == 5 { ping = ProtoReader.firstVarint(nested, field: 1) }
+            if field == 1 { audio = decodeSpeakerAudio(nested) }
         }
-        return (muted, ping)
+        return (muted, ping, audio)
+    }
+
+    private static func decodeSpeakerAudio(_ ordered: Data) -> SpeakerAudioPacket? {
+        var orderedReader = ProtoReader(ordered)
+        while let (field, wire) = orderedReader.nextTag() {
+            if field == 2, wire == 2, let packet = orderedReader.readBytes() {
+                var packetReader = ProtoReader(packet)
+                var pcm: Data?, rate: UInt64?, channels: UInt64 = 1, format: UInt64 = 2, codec: UInt64 = 0
+                while let (packetField, packetWire) = packetReader.nextTag() {
+                    if packetField == 1, packetWire == 2 { pcm = packetReader.readBytes(); continue }
+                    if packetWire == 0, let value = packetReader.readVarint() {
+                        if packetField == 2 { rate = value }
+                        if packetField == 3 { channels = value }
+                        if packetField == 4 { format = value }
+                        if packetField == 5 { codec = value }
+                    } else { packetReader.skip(packetWire) }
+                }
+                guard let pcm, let rate, codec == 0, format == 2,
+                      channels > 0, channels <= 2, rate > 0, rate <= 192_000 else { return nil }
+                return SpeakerAudioPacket(pcm: pcm, sampleRate: UInt32(rate), channels: UInt32(channels))
+            }
+            orderedReader.skip(wire)
+        }
+        return nil
     }
 
     private static func wrapper(field: UInt64, payload: Data) -> Data { fieldBytes(field, payload) }
@@ -72,6 +100,12 @@ enum MicYouProtocol {
         } while value != 0
         return data
     }
+}
+
+struct SpeakerAudioPacket {
+    let pcm: Data
+    let sampleRate: UInt32
+    let channels: UInt32
 }
 
 private struct ProtoReader {
@@ -115,4 +149,3 @@ private extension Data {
         Swift.withUnsafeBytes(of: &value) { append(contentsOf: $0) }
     }
 }
-

@@ -193,6 +193,12 @@ impl Default for LoopbackCapture {
     }
 }
 
+impl Drop for LoopbackCapture {
+    fn drop(&mut self) {
+        self.stop();
+    }
+}
+
 fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
     mutex
         .lock()

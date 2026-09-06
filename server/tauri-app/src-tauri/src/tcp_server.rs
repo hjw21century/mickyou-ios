@@ -383,6 +383,16 @@ async fn handle_client(
         Some(connect) => ExpectedAudioSession::Bound(connect.session_id),
         None => ExpectedAudioSession::UnboundLegacy,
     };
+    let speaker_mode = first_message
+        .connect
+        .as_ref()
+        .map(|connect| connect.speaker_mode)
+        .unwrap_or(false);
+    let speaker_session_id = first_message
+        .connect
+        .as_ref()
+        .map(|connect| connect.session_id)
+        .unwrap_or_default();
 
     #[cfg(windows)]
     let raw: RawSocketHandle = std::os::windows::io::AsRawSocket::as_raw_socket(&socket);
@@ -573,7 +583,67 @@ async fn handle_client(
             }
         }
     });
-    let task_guard = TaskGuard::new(vec![writer_task, ping_task, monitor_task]);
+    let mut tasks = vec![writer_task, ping_task, monitor_task];
+    if speaker_mode {
+        let tx_speaker = tx.clone();
+        tasks.push(tokio::spawn(async move {
+            let loopback = micyou_audio::LoopbackCapture::new();
+            if let Err(error) = loopback.start() {
+                log::error!("[Speaker] Failed to start desktop loopback: {error:?}");
+                return;
+            }
+            let mut interval = tokio::time::interval(Duration::from_millis(20));
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+            let mut sequence = 0i32;
+            loop {
+                interval.tick().await;
+                if !loopback.is_active() {
+                    if let Some(error) = loopback.take_failure_reason() {
+                        log::error!("[Speaker] Desktop loopback stopped: {error:?}");
+                    }
+                    break;
+                }
+                let samples = loopback.read(960);
+                let mut pcm = Vec::with_capacity(samples.len() * 2);
+                for sample in samples {
+                    let finite = if sample.is_finite() { sample } else { 0.0 };
+                    let value = (finite.clamp(-1.0, 1.0) * i16::MAX as f32) as i16;
+                    pcm.extend_from_slice(&value.to_le_bytes());
+                }
+                let message = MessageWrapper {
+                    audio_packet: Some(micyou_protocol::micyou::AudioPacketMessageOrdered {
+                        sequence_number: sequence,
+                        audio_packet: Some(micyou_protocol::micyou::AudioPacketMessage {
+                            buffer: pcm,
+                            sample_rate: 48_000,
+                            channel_count: 1,
+                            audio_format: 2,
+                            codec: 0,
+                        }),
+                        timestamp: std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_millis() as i64,
+                        fec_buffer: Vec::new(),
+                        fec_sequence_number: -1,
+                        session_id: speaker_session_id,
+                        fec_packet_lengths: Vec::new(),
+                    }),
+                    connect: None,
+                    mute: None,
+                    ping: None,
+                    pong: None,
+                    plugin_message: None,
+                };
+                sequence = sequence.wrapping_add(1);
+                if tx_speaker.send(message).await.is_err() {
+                    break;
+                }
+            }
+            loopback.stop();
+        }));
+    }
+    let task_guard = TaskGuard::new(tasks);
 
     let plugins_reader = plugins.clone();
     let reader = async {

@@ -1,4 +1,4 @@
-# MicYou Intel Mac 服务端
+# MicYou Intel Mac 扬声器服务端
 
 本目录包含 MicYou 2.0.3 桌面服务端（Tauri GUI、CLI、TUI）的源码，面向 Intel Mac / x86_64。iOS 客户端仍位于仓库根目录 `MicYou/`。
 
@@ -7,9 +7,10 @@
 在本仓库 Actions 的 **Intel macOS Server** 中打开成功的构建，下载 **MicYou-Server-macOS-Intel-x86_64**，解压后打开 DMG，将 MicYou 拖入 Applications。自动构建包未做 Apple Developer ID 签名或公证；首次打开可能需要在系统设置的“隐私与安全性”中允许打开。
 
 1. 手机与 Mac 连接同一局域网。
-2. Mac 服务端选择 Wi-Fi 模式并启动，允许防火墙接入。
-3. iOS 客户端选择发现的 Mac 或输入 Mac IP；默认控制端口 TCP 8554，音频端口 UDP 8555。
-4. 只试听时，服务端输出选择扬声器或耳机。要在会议或录音软件中作为麦克风使用，安装 BlackHole 2ch，在服务端输出选择 BlackHole 2ch，在会议/录音软件输入中也选择 BlackHole 2ch。
+2. 安装 BlackHole 2ch，在“音频 MIDI 设置”中创建多输出设备，同时勾选实际扬声器和 BlackHole。
+3. 将 macOS 系统输出切换到该多输出设备。
+4. Mac 服务端选择 Wi-Fi 模式并启动，允许防火墙接入。
+5. iOS 客户端选择发现的 Mac 或输入 Mac IP；电脑声音将通过 TCP 8554 发送到手机扬声器。
 
 iOS 当前不支持上游 Android 的 ADB USB 模式。避免同时启动 GUI 和 CLI/TUI（它们共用服务端和配置）。
 

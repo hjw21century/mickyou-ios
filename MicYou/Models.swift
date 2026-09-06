@@ -14,9 +14,8 @@ enum StreamState: Equatable {
         switch self {
         case .idle: "未连接"
         case .connecting: "正在连接…"
-        case .streaming: "传输中"
+        case .streaming: "播放中"
         case .failed: "连接失败"
         }
     }
 }
-

@@ -32,6 +32,8 @@ message PluginMessage {
 message ConnectMessage {
     // Zero identifies legacy clients that predate transport session isolation.
     int64 sessionId = 1;
+    // Speaker clients receive desktop loopback PCM over the TCP control stream.
+    bool speakerMode = 2;
 }
 
 message MuteMessage {

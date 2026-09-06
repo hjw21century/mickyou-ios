@@ -26,7 +26,7 @@ struct ContentView: View {
         VStack(spacing: 12) {
             ZStack {
                 Circle().fill(statusColor.opacity(0.14)).frame(width: 96, height: 96)
-                Image(systemName: model.state == .streaming ? (model.muted ? "mic.slash.fill" : "mic.fill") : "mic")
+                Image(systemName: model.state == .streaming ? (model.muted ? "speaker.slash.fill" : "speaker.wave.3.fill") : "speaker.wave.2")
                     .font(.system(size: 38)).foregroundStyle(statusColor)
             }
             Text(model.state.title).font(.title2.bold())
@@ -37,10 +37,10 @@ struct ContentView: View {
 
     private var levelCard: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(model.muted ? "电脑端已静音" : "麦克风电平").font(.headline)
+            Text(model.muted ? "电脑音频已静音" : "播放电平").font(.headline)
             ProgressView(value: Double(model.muted ? 0 : model.level)).tint(statusColor).scaleEffect(y: 3)
             Button(role: .destructive) { model.disconnect() } label: {
-                Label("停止传输", systemImage: "stop.fill").frame(maxWidth: .infinity)
+                Label("停止播放", systemImage: "stop.fill").frame(maxWidth: .infinity)
             }.buttonStyle(.borderedProminent)
         }.padding(20).background(.background, in: RoundedRectangle(cornerRadius: 20))
     }
@@ -60,7 +60,7 @@ struct ContentView: View {
             Text("手动连接").font(.headline)
             TextField("电脑 IP，例如 192.168.1.10", text: $model.host).textInputAutocapitalization(.never).keyboardType(.numbersAndPunctuation).textFieldStyle(.roundedBorder)
             TextField("端口", value: $model.port, format: .number).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
-            Button { model.connect() } label: { Label("连接并开始传输", systemImage: "antenna.radiowaves.left.and.right").frame(maxWidth: .infinity) }
+            Button { model.connect() } label: { Label("连接并开始播放", systemImage: "antenna.radiowaves.left.and.right").frame(maxWidth: .infinity) }
                 .buttonStyle(.borderedProminent).disabled(model.host.isEmpty || model.state == .connecting)
         }.padding(20).background(.background, in: RoundedRectangle(cornerRadius: 20))
     }
