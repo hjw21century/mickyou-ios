@@ -1,0 +1,47 @@
+name: Intel macOS Server
+on:
+  push:
+    branches: [master]
+    paths: ['server/**', '.github/workflows/server-intel.yml']
+  pull_request:
+    paths: ['server/**', '.github/workflows/server-intel.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: server/tauri-app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server/tauri-app -> target
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-about@0.9.1
+      - name: Build and verify Intel server
+        run: bash server/scripts/build-intel.sh
+      - name: Prepare download
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          cp server/tauri-app/target/x86_64-apple-darwin/release/bundle/dmg/*.dmg artifacts/MicYou-Server-macOS-Intel-x86_64.dmg
+          cp server/README.md artifacts/README.md
+          cp server/LICENSE artifacts/LICENSE
+          cd artifacts
+          shasum -a 256 *.dmg > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MicYou-Server-macOS-Intel-x86_64
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 90
