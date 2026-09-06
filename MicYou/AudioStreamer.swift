@@ -169,7 +169,9 @@ final class AudioStreamer {
             let magic = receiveBuffer.readUInt32BE(at: 0), length = Int(receiveBuffer.readUInt32BE(at: 4))
             guard magic == MicYouProtocol.tcpMagic, length >= 0, length <= 1_048_576 else { stop(); return }
             guard receiveBuffer.count >= 8 + length else { return }
-            let payload = Data(receiveBuffer[8..<(8 + length)])
+            let payloadStart = receiveBuffer.index(receiveBuffer.startIndex, offsetBy: 8)
+            let payloadEnd = receiveBuffer.index(payloadStart, offsetBy: length)
+            let payload = Data(receiveBuffer[payloadStart..<payloadEnd])
             receiveBuffer.removeFirst(8 + length)
             let control = MicYouProtocol.controlMessage(payload)
             if let muted = control.muted {
@@ -228,8 +230,11 @@ enum StreamError: LocalizedError {
     }
 }
 
-private extension Data {
+extension Data {
     func readUInt32BE(at offset: Int) -> UInt32 {
-        self[offset..<(offset + 4)].reduce(0) { ($0 << 8) | UInt32($1) }
+        precondition(offset >= 0 && count >= offset + 4)
+        let fieldStart = index(startIndex, offsetBy: offset)
+        let fieldEnd = index(fieldStart, offsetBy: 4)
+        return self[fieldStart..<fieldEnd].reduce(0) { ($0 << 8) | UInt32($1) }
     }
 }

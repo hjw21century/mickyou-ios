@@ -17,5 +17,13 @@ final class ProtocolCodecTests: XCTestCase {
                                            pcm: Data(repeating: 0, count: 960), sampleRate: 48_000)
         XCTAssertLessThanOrEqual(MicYouProtocol.udpFrame(payload).count, 1472)
     }
-}
 
+    func testBigEndianReadUsesOffsetRelativeToDataStartIndex() {
+        var buffered = Data([0xff, 0x4d, 0x69, 0x63, 0x59, 0, 0, 0, 3])
+        buffered.removeFirst()
+
+        XCTAssertNotEqual(buffered.startIndex, 0)
+        XCTAssertEqual(buffered.readUInt32BE(at: 0), MicYouProtocol.tcpMagic)
+        XCTAssertEqual(buffered.readUInt32BE(at: 4), 3)
+    }
+}
