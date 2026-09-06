@@ -3,10 +3,10 @@ set -euo pipefail
 cd "$(dirname "$0")/../tauri-app"
 app=target/x86_64-apple-darwin/release/bundle/macos/MicYou.app
 for binary in micyou micyou-cli micyou-tui; do
-  lipo -verify_arch x86_64 "$app/Contents/MacOS/$binary"
+  lipo "$app/Contents/MacOS/$binary" -verify_arch x86_64
 done
 ort="$app/Contents/Resources/resources/libonnxruntime.dylib"
-lipo -verify_arch x86_64 "$ort"
+lipo "$ort" -verify_arch x86_64
 # Loading the bundled library catches missing transitive dependencies as well.
 python3 - "$ort" <<'PYTHON'
 import ctypes, sys
