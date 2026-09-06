@@ -50,3 +50,7 @@ macOS 必须安装 BlackHole，并创建“多输出设备”，同时勾选实�
 ## Intel Mac 服务端
 
 已加入 [Intel 服务端源码与构建说明](server/README.md)。安装包请在 [Intel macOS Server 构建页面](https://github.com/hjw21century/mickyou-ios/actions/workflows/server-intel.yml) 下载成功构建的 `MicYou-Server-macOS-Intel-x86_64` artifact。
+
+## Windows x64 服务端
+
+Windows 使用 WASAPI loopback 捕获系统声音，无需安装虚拟声卡。配置和本地构建方法见 [Windows 服务端说明](server/WINDOWS.md)。
