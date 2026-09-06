@@ -94,11 +94,18 @@ final class AudioStreamer {
         guard format.sampleRate > 0, format.channelCount > 0 else {
             throw StreamError.invalidAudioFormat
         }
+        guard let captureFormat = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: format.sampleRate,
+            channels: format.channelCount,
+            interleaved: false
+        ) else {
+            throw StreamError.invalidAudioFormat
+        }
         sampleRate = UInt32(format.sampleRate.rounded())
-        // Passing a stale hardware format can trigger an AVAudioEngine Objective-C
-        // assertion instead of a catchable Swift error. `nil` lets the input node
-        // provide its current native format after the audio session is activated.
-        input.installTap(onBus: 0, bufferSize: 480, format: nil) { [weak self] buffer, _ in
+        // Keep the hardware sample rate and channel count, but normalize the
+        // memory layout so every channel has its own Float32 pointer.
+        input.installTap(onBus: 0, bufferSize: 480, format: captureFormat) { [weak self] buffer, _ in
             // AVAudioEngine owns and may reuse the tap buffer after this callback returns.
             self?.process(buffer)
         }
@@ -111,24 +118,19 @@ final class AudioStreamer {
         guard running, !serverMuted, let channels = buffer.floatChannelData else { return }
         let frames = Int(buffer.frameLength), channelCount = Int(buffer.format.channelCount)
         guard frames > 0, channelCount > 0 else { return }
-        let isInterleaved = buffer.format.isInterleaved
         var pcm = Data(capacity: frames * 2)
         var peak: Float = 0
         for index in 0..<frames {
             var sample: Float = 0
-            if isInterleaved {
-                // Interleaved buffers expose one pointer. Accessing channels[1]
-                // for stereo is out of bounds and results in EXC_BAD_ACCESS.
-                let frameOffset = index * channelCount
-                for channel in 0..<channelCount {
-                    sample += channels[0][frameOffset + channel]
-                }
-            } else {
-                for channel in 0..<channelCount {
-                    sample += channels[channel][index]
-                }
+            for channel in 0..<channelCount {
+                let value = channels[channel][index]
+                // Some audio routes briefly emit non-finite samples while they
+                // start. Converting NaN or infinity to Int16 traps in Swift.
+                if value.isFinite { sample += value }
             }
-            sample = max(-1, min(1, sample / Float(max(1, channelCount))))
+            sample /= Float(channelCount)
+            if !sample.isFinite { sample = 0 }
+            sample = max(-1, min(1, sample))
             peak = max(peak, abs(sample))
             var int16 = Int16(sample * Float(Int16.max)).littleEndian
             withUnsafeBytes(of: &int16) { pcm.append(contentsOf: $0) }
