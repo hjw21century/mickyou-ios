@@ -110,11 +110,24 @@ final class AudioStreamer {
     private func process(_ buffer: AVAudioPCMBuffer) {
         guard running, !serverMuted, let channels = buffer.floatChannelData else { return }
         let frames = Int(buffer.frameLength), channelCount = Int(buffer.format.channelCount)
+        guard frames > 0, channelCount > 0 else { return }
+        let isInterleaved = buffer.format.isInterleaved
         var pcm = Data(capacity: frames * 2)
         var peak: Float = 0
         for index in 0..<frames {
             var sample: Float = 0
-            for channel in 0..<channelCount { sample += channels[channel][index] }
+            if isInterleaved {
+                // Interleaved buffers expose one pointer. Accessing channels[1]
+                // for stereo is out of bounds and results in EXC_BAD_ACCESS.
+                let frameOffset = index * channelCount
+                for channel in 0..<channelCount {
+                    sample += channels[0][frameOffset + channel]
+                }
+            } else {
+                for channel in 0..<channelCount {
+                    sample += channels[channel][index]
+                }
+            }
             sample = max(-1, min(1, sample / Float(max(1, channelCount))))
             peak = max(peak, abs(sample))
             var int16 = Int16(sample * Float(Int16.max)).littleEndian
