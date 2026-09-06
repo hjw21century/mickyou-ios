@@ -37,3 +37,7 @@ xcodebuild \
 首次连接时需允许“麦克风”和“本地网络”权限。电脑端选择 Wi-Fi 模式后，可从发现列表连接；也可手动输入电脑 IP（默认 TCP 端口 `8554`）。音频通过 UDP `8555` 发送，控制与心跳走 TCP `8554`。
 
 > 最低运行版本为 iOS 17。Intel Mac 只影响模拟器架构，不影响生成的真机应用。
+
+## Intel Mac 服务端
+
+已加入 [Intel 服务端源码与构建说明](server/README.md)。安装包请在 [Intel macOS Server 构建页面](https://github.com/hjw21century/mickyou-ios/actions/workflows/server-intel.yml) 下载成功构建的 `MicYou-Server-macOS-Intel-x86_64` artifact。

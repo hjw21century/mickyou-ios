@@ -1,0 +1,31 @@
+[package]
+name = "micyou-tui"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "MicYou interactive terminal interface"
+
+[[bin]]
+name = "micyou-tui"
+path = "src/main.rs"
+
+[dependencies]
+micyou-app = { path = "../../src-tauri" }
+micyou-audio = { path = "../micyou-audio", features = [
+  "dsp",
+  "noise-suppression",
+] }
+
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1.52.3", features = ["full"] }
+ratatui = "0.29.0"
+crossterm = "0.28.1"
+sysinfo = "0.39.6"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2.169"
+
+[build-dependencies]
+tauri-winres = "0.3.6"
