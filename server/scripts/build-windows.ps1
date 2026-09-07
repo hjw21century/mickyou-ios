@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
-if (-not $IsWindows) { throw 'Run this script on 64-bit Windows.' }
+if ($env:OS -ne 'Windows_NT' -or -not [Environment]::Is64BitOperatingSystem) {
+    throw 'Run this script on 64-bit Windows.'
+}
 
 $root = Split-Path -Parent $PSScriptRoot
 $env:TAURI_ENV_TARGET_TRIPLE = 'x86_64-pc-windows-msvc'
@@ -17,4 +19,3 @@ try {
 }
 
 & (Join-Path $PSScriptRoot 'verify-windows.ps1')
-

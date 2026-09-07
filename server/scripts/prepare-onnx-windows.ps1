@@ -1,4 +1,6 @@
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5.1 may otherwise negotiate the obsolete TLS 1.0 default.
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $root = Split-Path -Parent $PSScriptRoot
 $app = Join-Path $root 'tauri-app'
 $work = Join-Path ([System.IO.Path]::GetTempPath()) ("micyou-ort-" + [guid]::NewGuid())
@@ -22,4 +24,3 @@ try {
 } finally {
     Remove-Item $work -Recurse -Force -ErrorAction SilentlyContinue
 }
-

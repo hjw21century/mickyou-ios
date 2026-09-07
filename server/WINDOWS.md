@@ -14,7 +14,7 @@
 
 ## 本地构建
 
-安装 Visual Studio 2022 Build Tools（Desktop development with C++）、WebView2 Runtime、Node.js 22、Rust stable 和 cargo-about 0.9.1，然后在 PowerShell 中运行：
+安装 Visual Studio 2022 Build Tools（Desktop development with C++）、WebView2 Runtime、Node.js 22、Rust stable 和 cargo-about 0.9.1，然后在 Windows PowerShell 5.1 或 PowerShell 7 中运行：
 
 ```powershell
 cargo install cargo-about --version 0.9.1 --locked
