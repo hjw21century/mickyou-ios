@@ -13,7 +13,7 @@ final class ServerDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDele
         onChange?([])
         let browser = NetServiceBrowser()
         browser.delegate = self
-        browser.searchForServices(ofType: "_micyou._tcp.", inDomain: "local.")
+        browser.searchForServices(ofType: "_pocketspeaker._tcp.", inDomain: "local.")
         self.browser = browser
     }
 
@@ -55,4 +55,3 @@ final class ServerDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDele
     private func serviceKey(_ service: NetService) -> String { "\(service.name).\(service.type)\(service.domain)" }
     private func publish() { onChange?(serversByID.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) }
 }
-

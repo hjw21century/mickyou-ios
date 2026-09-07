@@ -1,5 +1,5 @@
 import XCTest
-@testable import MicYou
+@testable import PocketSpeaker
 
 final class ProtocolCodecTests: XCTestCase {
     func testConnectDeclaresSpeakerMode() {

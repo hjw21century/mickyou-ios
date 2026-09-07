@@ -1,0 +1,19 @@
+<Window x:Class="PocketSpeaker.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid Width="560" Height="650">
+    <Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,1"><GradientStop Color="#070B1D"/><GradientStop Color="#171044" Offset="1"/></LinearGradientBrush></Grid.Background>
+    <StackPanel Padding="40" Spacing="24">
+      <Grid><StackPanel Orientation="Horizontal" Spacing="12"><FontIcon Glyph="&#xE767;" FontSize="26" Foreground="#55DDF6"/><TextBlock Text="Pocket Speaker" FontSize="24" FontWeight="SemiBold"/></StackPanel><Border HorizontalAlignment="Right" Background="#182750" CornerRadius="10" Padding="10,5"><TextBlock Text="WINDOWS" Foreground="#55DDF6" FontSize="11" FontWeight="Bold"/></Border></Grid>
+      <Border Background="#151A36" BorderBrush="#30385F" BorderThickness="1" CornerRadius="28" Padding="34">
+        <StackPanel Spacing="22" HorizontalAlignment="Center">
+          <Border Width="160" Height="160" CornerRadius="80" Background="#24205A"><FontIcon Glyph="&#xE8EA;" FontSize="66" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/></Border>
+          <TextBlock x:Name="StatusText" Text="准备就绪" FontSize="30" FontWeight="Bold" HorizontalAlignment="Center"/>
+          <TextBlock x:Name="AddressText" Text="将电脑声音无线播放到手机" Foreground="#99A3C7" HorizontalAlignment="Center"/>
+          <ProgressBar x:Name="LevelBar" Width="360" Height="9" Minimum="0" Maximum="1" Value="0" Foreground="#7367FF"/>
+          <Button x:Name="ToggleButton" Content="开始共享声音" Width="240" Height="50" HorizontalAlignment="Center" Click="ToggleClicked" Style="{StaticResource AccentButtonStyle}"/>
+        </StackPanel>
+      </Border>
+      <TextBlock Text="无需虚拟声卡 · WASAPI 系统音频捕获 · 局域网传输" Foreground="#6F789C" FontSize="12" HorizontalAlignment="Center"/>
+      <InfoBar x:Name="ErrorBar" Severity="Error" IsOpen="False" IsClosable="True"/>
+    </StackPanel>
+  </Grid>
+</Window>

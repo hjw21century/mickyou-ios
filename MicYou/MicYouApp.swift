@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct MicYouApp: App {
+struct PocketSpeakerApp: App {
     @StateObject private var model = AppModel()
 
     var body: some Scene {
@@ -11,4 +11,3 @@ struct MicYouApp: App {
         }
     }
 }
-

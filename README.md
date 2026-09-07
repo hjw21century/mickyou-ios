@@ -1,19 +1,19 @@
-# MicYou iOS
+# Pocket Speaker
 
 原生 SwiftUI 客户端，通过 Wi-Fi 把电脑的系统音频送到 iPhone 扬声器播放。
 
-当前 iOS 版本支持局域网 Wi-Fi 传输；Android 的 ADB USB 模式不适用于 iOS。
+当前版本专注于局域网 Wi-Fi 传输，电脑与 iPhone 需连接同一网络。
 
 ## 构建
 
 1. 安装 Xcode 15 或更高版本，以及 [XcodeGen](https://github.com/yonaskolb/XcodeGen)（例如 `brew install xcodegen`）。
 2. 在本目录执行 `xcodegen generate`。
-3. 打开 `MicYou.xcodeproj`，选择自己的开发团队和真机后运行。
+3. 打开 `PocketSpeaker.xcodeproj`，选择自己的开发团队和真机后运行。
 
 更新 `project.yml` 或 `Info.plist` 后，请删除旧工程再重新生成，确保局域网隐私说明被打包：
 
 ```bash
-rm -rf MicYou.xcodeproj
+rm -rf PocketSpeaker.xcodeproj
 xcodegen generate
 ```
 
@@ -31,8 +31,8 @@ xcodegen generate
 
 ```bash
 xcodebuild \
-  -project MicYou.xcodeproj \
-  -scheme MicYou \
+  -project PocketSpeaker.xcodeproj \
+  -scheme PocketSpeaker \
   -sdk iphonesimulator \
   -destination 'platform=iOS Simulator,name=iPhone 15' \
   CODE_SIGNING_ALLOWED=NO \
@@ -43,14 +43,10 @@ xcodebuild \
 
 首次连接时需允许“本地网络”权限。电脑端选择 Wi-Fi 模式后，可从发现列表连接；也可手动输入电脑 IP（默认 TCP 端口 `8554`）。电脑音频以 48 kHz/16-bit/单声道 PCM 通过 TCP 发送到手机。
 
-macOS 必须安装 BlackHole，并创建“多输出设备”，同时勾选实际扬声器和 BlackHole；再把系统声音输出切换到该多输出设备。否则服务端无法捕获电脑正在播放的声音。
+macOS 原生服务端通过 ScreenCaptureKit 捕获系统音频，无需 BlackHole 或多输出设备。Windows 原生服务端通过 WASAPI loopback 捕获默认输出设备。
 
 > 最低运行版本为 iOS 17。Intel Mac 只影响模拟器架构，不影响生成的真机应用。
 
-## Intel Mac 服务端
+## 原生桌面服务端
 
-已加入 [Intel 服务端源码与构建说明](server/README.md)。安装包请在 [Intel macOS Server 构建页面](https://github.com/hjw21century/mickyou-ios/actions/workflows/server-intel.yml) 下载成功构建的 `MicYou-Server-macOS-Intel-x86_64` artifact。
-
-## Windows x64 服务端
-
-Windows 使用 WASAPI loopback 捕获系统声音，无需安装虚拟声卡。配置和本地构建方法见 [Windows 服务端说明](server/WINDOWS.md)。
+服务端已裁剪为单一的电脑音频共享功能。macOS 使用 SwiftUI + ScreenCaptureKit，Windows 使用 WinUI 3 + WASAPI，构建说明见 [服务端文档](server/README.md)。

@@ -1,4 +1,4 @@
-name: MicYou
+name: PocketSpeaker
 options:
   bundleIdPrefix: com.lanrhyme
   deploymentTarget:
@@ -15,23 +15,24 @@ settings:
     "ARCHS[sdk=iphoneos*]": arm64
     "ARCHS[sdk=iphonesimulator*]": "$(ARCHS_STANDARD)"
 targets:
-  MicYou:
+  PocketSpeaker:
     type: application
     platform: iOS
     sources: [MicYou]
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.lanrhyme.micyou.ios
-        PRODUCT_NAME: MicYou
+        PRODUCT_BUNDLE_IDENTIFIER: com.pocketspeaker.ios
+        PRODUCT_NAME: Pocket Speaker
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: MicYou/Info.plist
         ONLY_ACTIVE_ARCH: NO
     scheme:
-      testTargets: [MicYouTests]
-  MicYouTests:
+      testTargets: [PocketSpeakerTests]
+  PocketSpeakerTests:
     type: bundle.unit-test
     platform: iOS
     sources: [MicYouTests]
     dependencies:
-      - target: MicYou
+      - target: PocketSpeaker
