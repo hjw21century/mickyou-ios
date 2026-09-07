@@ -21,3 +21,5 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\server\windows\build.p
 ```
 
 电脑和 iPhone 需位于同一局域网。桌面端启动共享后，在手机端选择发现的电脑；Windows 可选择需要捕获的输出设备，并手动输入界面显示的 IPv4 地址，默认端口为 `8679`。
+
+macOS 和 Windows 均提供中英文界面及最近 20 条连接记录；语言、历史记录和 Windows 输出设备选择会保存在本机。

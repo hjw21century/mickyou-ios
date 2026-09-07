@@ -7,12 +7,13 @@ internal sealed record AudioDevice(string Id, string Name);
 internal sealed class SpeakerServer {
     public bool Running { get; private set; } public bool Connected { get; private set; }
     public event Action? StateChanged; public event Action<double>? LevelChanged;
+    public event Action<string>? ClientConnected;
     private TcpListener? listener; private CancellationTokenSource? cancellation; private WasapiLoopbackCapture? capture; private MMDevice? captureDevice; private string? deviceId; private NetworkStream? client; private int sequence; private readonly SemaphoreSlim sendLock = new(1, 1);
     public static IReadOnlyList<AudioDevice> GetAudioDevices() { using var devices = new MMDeviceEnumerator(); return devices.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).Select(device => new AudioDevice(device.ID, device.FriendlyName)).ToList(); }
     public Task StartAsync(int port, string? selectedDeviceId) { deviceId = selectedDeviceId; cancellation = new(); listener = new TcpListener(IPAddress.Any, port); listener.Start(); Running = true; StateChanged?.Invoke(); _ = AcceptLoop(cancellation.Token); return Task.CompletedTask; }
     public async Task StopAsync() { cancellation?.Cancel(); capture?.StopRecording(); capture?.Dispose(); capture = null; captureDevice?.Dispose(); captureDevice = null; client?.Dispose(); client = null; listener?.Stop(); listener = null; Connected = false; Running = false; StateChanged?.Invoke(); await Task.CompletedTask; }
     private async Task AcceptLoop(CancellationToken token) {
-        while (!token.IsCancellationRequested) try { var socket = await listener!.AcceptTcpClientAsync(token); client?.Dispose(); client = socket.GetStream(); if (await Handshake(client, token)) { Connected = true; StateChanged?.Invoke(); StartCapture(); } } catch (OperationCanceledException) { break; } catch { if (!token.IsCancellationRequested) await Task.Delay(500, token); }
+        while (!token.IsCancellationRequested) try { var socket = await listener!.AcceptTcpClientAsync(token); client?.Dispose(); client = socket.GetStream(); if (await Handshake(client, token)) { Connected = true; ClientConnected?.Invoke(socket.Client.RemoteEndPoint?.ToString() ?? "iPhone"); StateChanged?.Invoke(); StartCapture(); } } catch (OperationCanceledException) { break; } catch { if (!token.IsCancellationRequested) await Task.Delay(500, token); }
     }
     private static async Task<bool> Handshake(NetworkStream stream, CancellationToken token) {
         var hello = new byte[12]; if (!await ReadExact(stream, hello, token) || System.Text.Encoding.UTF8.GetString(hello) != "MicYouCheck1") return false;

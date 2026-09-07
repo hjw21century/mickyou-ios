@@ -2,6 +2,8 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var showingHistory = false
+    @State private var showingSettings = false
 
     var body: some View {
         ZStack {
@@ -11,6 +13,8 @@ struct ContentView: View {
             ScrollView { VStack(spacing: 28) { header; hero; mainCard }.padding(24) }
         }
         .preferredColorScheme(.dark)
+        .sheet(isPresented: $showingHistory) { historySheet }
+        .sheet(isPresented: $showingSettings) { settingsSheet }
     }
 
     private var header: some View {
@@ -18,6 +22,8 @@ struct ContentView: View {
             Image(systemName: "wave.3.right.circle.fill").font(.title2).foregroundStyle(.cyan, .indigo)
             Text("Pocket Speaker").font(.headline.weight(.semibold))
             Spacer()
+            Button { showingHistory = true } label: { Image(systemName: "clock.arrow.circlepath") }.buttonStyle(GlassButtonStyle())
+            Button { showingSettings = true } label: { Image(systemName: "gearshape.fill") }.buttonStyle(GlassButtonStyle())
             if model.state != .streaming {
                 Button { model.refresh() } label: { Image(systemName: "arrow.clockwise") }
                     .buttonStyle(GlassButtonStyle())
@@ -33,7 +39,7 @@ struct ContentView: View {
                 Image(systemName: model.state == .streaming ? "iphone.radiowaves.left.and.right" : "iphone")
                     .font(.system(size: 58, weight: .light)).foregroundStyle(.white)
             }
-            Text(model.state.title).font(.system(size: 30, weight: .bold, design: .rounded))
+            Text(statusTitle).font(.system(size: 30, weight: .bold, design: .rounded))
             Text(subtitle).font(.subheadline).foregroundStyle(.white.opacity(0.56)).multilineTextAlignment(.center)
         }
     }
@@ -41,7 +47,7 @@ struct ContentView: View {
     @ViewBuilder private var mainCard: some View {
         if model.state == .streaming {
             VStack(spacing: 22) {
-                HStack { Text("实时音量").font(.headline); Spacer(); Text("LIVE").font(.caption2.bold()).foregroundStyle(.cyan) }
+                HStack { Text(t("实时音量", "Live volume")).font(.headline); Spacer(); Text("LIVE").font(.caption2.bold()).foregroundStyle(.cyan) }
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         Capsule().fill(.white.opacity(0.08))
@@ -50,14 +56,14 @@ struct ContentView: View {
                     }
                 }.frame(height: 10)
                 Button(role: .destructive) { model.disconnect() } label: {
-                    Label("断开连接", systemImage: "stop.fill").frame(maxWidth: .infinity).padding(.vertical, 8)
+                    Label(t("断开连接", "Disconnect"), systemImage: "stop.fill").frame(maxWidth: .infinity).padding(.vertical, 8)
                 }.buttonStyle(.borderedProminent).tint(Color(hex: 0xCC4260))
             }.glassCard()
         } else {
             VStack(alignment: .leading, spacing: 18) {
-                Label("附近的电脑", systemImage: "desktopcomputer").font(.headline)
+                Label(t("附近的电脑", "Nearby computers"), systemImage: "desktopcomputer").font(.headline)
                 if model.servers.isEmpty {
-                    HStack { ProgressView(); Text("正在搜索 Pocket Speaker…").foregroundStyle(.secondary) }
+                    HStack { ProgressView(); Text(t("正在搜索 Pocket Speaker…", "Searching for Pocket Speaker…")).foregroundStyle(.secondary) }
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                 } else {
                     ForEach(model.servers) { server in
@@ -67,14 +73,14 @@ struct ContentView: View {
                         }.buttonStyle(.plain)
                     }
                 }
-                HStack { Rectangle().frame(height: 1); Text("手动连接").font(.caption); Rectangle().frame(height: 1) }
+                HStack { Rectangle().frame(height: 1); Text(t("手动连接", "Manual connection")).font(.caption); Rectangle().frame(height: 1) }
                     .foregroundStyle(.white.opacity(0.12))
-                TextField("电脑 IP 地址", text: $model.host).textInputAutocapitalization(.never).keyboardType(.numbersAndPunctuation)
+                TextField(t("电脑 IP 地址", "Computer IP address"), text: $model.host).textInputAutocapitalization(.never).keyboardType(.numbersAndPunctuation)
                     .padding(14).background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
-                TextField("端口", value: $model.port, format: .number).keyboardType(.numberPad)
+                TextField(t("端口", "Port"), value: $model.port, format: .number).keyboardType(.numberPad)
                     .padding(14).background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
                 Button { model.connect() } label: {
-                    Label("连接电脑", systemImage: "bolt.horizontal.circle.fill").frame(maxWidth: .infinity).padding(.vertical, 9)
+                    Label(t("连接电脑", "Connect"), systemImage: "bolt.horizontal.circle.fill").frame(maxWidth: .infinity).padding(.vertical, 9)
                 }.buttonStyle(.borderedProminent).tint(.indigo).disabled(model.host.isEmpty || model.state == .connecting)
             }.glassCard()
         }
@@ -82,9 +88,43 @@ struct ContentView: View {
 
     private var subtitle: String {
         if case .failed(let message) = model.state { return message }
-        return model.state == .streaming ? "电脑的声音，正在此处播放" : "让手机成为电脑的无线扬声器"
+        return model.state == .streaming ? t("电脑的声音，正在此处播放", "Computer audio is playing here") : t("让手机成为电脑的无线扬声器", "Turn your phone into a wireless speaker")
     }
     private var statusColor: Color { model.state == .streaming ? .cyan : .indigo }
+    private var statusTitle: String {
+        switch model.state {
+        case .idle: t("未连接", "Not connected")
+        case .connecting: t("正在连接…", "Connecting…")
+        case .streaming: t("播放中", "Playing")
+        case .failed: t("连接失败", "Connection failed")
+        }
+    }
+    private func t(_ chinese: String, _ english: String) -> String { model.language == .chinese ? chinese : english }
+
+    private var historySheet: some View {
+        NavigationStack {
+            List {
+                if model.history.isEmpty { ContentUnavailableView(t("暂无连接记录", "No connection history"), systemImage: "clock") }
+                ForEach(model.history) { record in
+                    Button { showingHistory = false; model.connect(to: record) } label: {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(record.name).font(.headline)
+                            Text("\(record.host):\(record.port) · \(record.date.formatted(date: .abbreviated, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+                        }.padding(.vertical, 4)
+                    }.buttonStyle(.plain)
+                }
+            }.navigationTitle(t("连接记录", "Connection history")).toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button(t("清空", "Clear")) { model.clearHistory() }.disabled(model.history.isEmpty) }
+            }
+        }.preferredColorScheme(.dark)
+    }
+
+    private var settingsSheet: some View {
+        NavigationStack {
+            Form { Picker(t("界面语言", "Language"), selection: $model.language) { ForEach(AppLanguage.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented) }
+                .navigationTitle(t("设置", "Settings"))
+        }.presentationDetents([.medium]).preferredColorScheme(.dark)
+    }
 }
 
 private struct GlassButtonStyle: ButtonStyle {
