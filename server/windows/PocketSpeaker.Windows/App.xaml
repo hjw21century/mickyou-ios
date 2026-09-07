@@ -1,1 +1,8 @@
-<Application x:Class="PocketSpeaker.App" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"><Application.Resources><ResourceDictionary><ResourceDictionary.ThemeDictionaries><ResourceDictionary x:Key="Dark"><SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#6965FF"/></ResourceDictionary></ResourceDictionary.ThemeDictionaries></ResourceDictionary></Application.Resources></Application>
+<Application
+    x:Class="PocketSpeaker.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Application.Resources>
+    <ResourceDictionary />
+  </Application.Resources>
+</Application>

@@ -9,7 +9,7 @@
           <TextBlock x:Name="StatusText" Text="准备就绪" FontSize="30" FontWeight="Bold" HorizontalAlignment="Center"/>
           <TextBlock x:Name="AddressText" Text="将电脑声音无线播放到手机" Foreground="#99A3C7" HorizontalAlignment="Center"/>
           <ProgressBar x:Name="LevelBar" Width="360" Height="9" Minimum="0" Maximum="1" Value="0" Foreground="#7367FF"/>
-          <Button x:Name="ToggleButton" Content="开始共享声音" Width="240" Height="50" HorizontalAlignment="Center" Click="ToggleClicked" Style="{StaticResource AccentButtonStyle}"/>
+          <Button x:Name="ToggleButton" Content="开始共享声音" Width="240" Height="50" HorizontalAlignment="Center" Click="ToggleClicked" Background="#6965FF" Foreground="White" BorderThickness="0" CornerRadius="12"/>
         </StackPanel>
       </Border>
       <TextBlock Text="无需虚拟声卡 · WASAPI 系统音频捕获 · 局域网传输" Foreground="#6F789C" FontSize="12" HorizontalAlignment="Center"/>
