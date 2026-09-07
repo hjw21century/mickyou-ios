@@ -8,9 +8,9 @@ struct DiscoveredServer: Identifiable, Hashable {
 }
 
 enum AppLanguage: String, CaseIterable, Identifiable, Codable {
-    case chinese, english
+    case chinese, english, japanese
     var id: String { rawValue }
-    var title: String { self == .chinese ? "简体中文" : "English" }
+    var title: String { switch self { case .chinese: "简体中文"; case .english: "English"; case .japanese: "日本語" } }
 }
 
 struct ConnectionRecord: Identifiable, Codable, Hashable {

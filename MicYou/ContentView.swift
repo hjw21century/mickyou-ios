@@ -47,7 +47,7 @@ struct ContentView: View {
     @ViewBuilder private var mainCard: some View {
         if model.state == .streaming {
             VStack(spacing: 22) {
-                HStack { Text(t("实时音量", "Live volume")).font(.headline); Spacer(); Text("LIVE").font(.caption2.bold()).foregroundStyle(.cyan) }
+                HStack { Text(t("实时音量", "Live volume", "リアルタイム音量")).font(.headline); Spacer(); Text("LIVE").font(.caption2.bold()).foregroundStyle(.cyan) }
                 GeometryReader { proxy in
                     ZStack(alignment: .leading) {
                         Capsule().fill(.white.opacity(0.08))
@@ -56,14 +56,14 @@ struct ContentView: View {
                     }
                 }.frame(height: 10)
                 Button(role: .destructive) { model.disconnect() } label: {
-                    Label(t("断开连接", "Disconnect"), systemImage: "stop.fill").frame(maxWidth: .infinity).padding(.vertical, 8)
+                    Label(t("断开连接", "Disconnect", "接続を解除"), systemImage: "stop.fill").frame(maxWidth: .infinity).padding(.vertical, 8)
                 }.buttonStyle(.borderedProminent).tint(Color(hex: 0xCC4260))
             }.glassCard()
         } else {
             VStack(alignment: .leading, spacing: 18) {
-                Label(t("附近的电脑", "Nearby computers"), systemImage: "desktopcomputer").font(.headline)
+                Label(t("附近的电脑", "Nearby computers", "近くのパソコン"), systemImage: "desktopcomputer").font(.headline)
                 if model.servers.isEmpty {
-                    HStack { ProgressView(); Text(t("正在搜索 Pocket Speaker…", "Searching for Pocket Speaker…")).foregroundStyle(.secondary) }
+                    HStack { ProgressView(); Text(t("正在搜索 Pocket Speaker…", "Searching for Pocket Speaker…", "Pocket Speaker を検索中…")).foregroundStyle(.secondary) }
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                 } else {
                     ForEach(model.servers) { server in
@@ -73,14 +73,14 @@ struct ContentView: View {
                         }.buttonStyle(.plain)
                     }
                 }
-                HStack { Rectangle().frame(height: 1); Text(t("手动连接", "Manual connection")).font(.caption); Rectangle().frame(height: 1) }
+                HStack { Rectangle().frame(height: 1); Text(t("手动连接", "Manual connection", "手動接続")).font(.caption); Rectangle().frame(height: 1) }
                     .foregroundStyle(.white.opacity(0.12))
-                TextField(t("电脑 IP 地址", "Computer IP address"), text: $model.host).textInputAutocapitalization(.never).keyboardType(.numbersAndPunctuation)
+                TextField(t("电脑 IP 地址", "Computer IP address", "パソコンの IP アドレス"), text: $model.host).textInputAutocapitalization(.never).keyboardType(.numbersAndPunctuation)
                     .padding(14).background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
-                TextField(t("端口", "Port"), value: $model.port, format: .number).keyboardType(.numberPad)
+                TextField(t("端口", "Port", "ポート"), value: $model.port, format: .number).keyboardType(.numberPad)
                     .padding(14).background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 14))
                 Button { model.connect() } label: {
-                    Label(t("连接电脑", "Connect"), systemImage: "bolt.horizontal.circle.fill").frame(maxWidth: .infinity).padding(.vertical, 9)
+                    Label(t("连接电脑", "Connect", "接続"), systemImage: "bolt.horizontal.circle.fill").frame(maxWidth: .infinity).padding(.vertical, 9)
                 }.buttonStyle(.borderedProminent).tint(.indigo).disabled(model.host.isEmpty || model.state == .connecting)
             }.glassCard()
         }
@@ -88,23 +88,23 @@ struct ContentView: View {
 
     private var subtitle: String {
         if case .failed(let message) = model.state { return message }
-        return model.state == .streaming ? t("电脑的声音，正在此处播放", "Computer audio is playing here") : t("让手机成为电脑的无线扬声器", "Turn your phone into a wireless speaker")
+        return model.state == .streaming ? t("电脑的声音，正在此处播放", "Computer audio is playing here", "パソコンの音声を再生中") : t("让手机成为电脑的无线扬声器", "Turn your phone into a wireless speaker", "スマートフォンをワイヤレススピーカーに")
     }
     private var statusColor: Color { model.state == .streaming ? .cyan : .indigo }
     private var statusTitle: String {
         switch model.state {
-        case .idle: t("未连接", "Not connected")
-        case .connecting: t("正在连接…", "Connecting…")
-        case .streaming: t("播放中", "Playing")
-        case .failed: t("连接失败", "Connection failed")
+        case .idle: t("未连接", "Not connected", "未接続")
+        case .connecting: t("正在连接…", "Connecting…", "接続中…")
+        case .streaming: t("播放中", "Playing", "再生中")
+        case .failed: t("连接失败", "Connection failed", "接続に失敗しました")
         }
     }
-    private func t(_ chinese: String, _ english: String) -> String { model.language == .chinese ? chinese : english }
+    private func t(_ chinese: String, _ english: String, _ japanese: String) -> String { switch model.language { case .chinese: chinese; case .english: english; case .japanese: japanese } }
 
     private var historySheet: some View {
         NavigationStack {
             List {
-                if model.history.isEmpty { ContentUnavailableView(t("暂无连接记录", "No connection history"), systemImage: "clock") }
+                if model.history.isEmpty { ContentUnavailableView(t("暂无连接记录", "No connection history", "接続履歴はありません"), systemImage: "clock") }
                 ForEach(model.history) { record in
                     Button { showingHistory = false; model.connect(to: record) } label: {
                         VStack(alignment: .leading, spacing: 5) {
@@ -113,16 +113,16 @@ struct ContentView: View {
                         }.padding(.vertical, 4)
                     }.buttonStyle(.plain)
                 }
-            }.navigationTitle(t("连接记录", "Connection history")).toolbar {
-                ToolbarItem(placement: .topBarTrailing) { Button(t("清空", "Clear")) { model.clearHistory() }.disabled(model.history.isEmpty) }
+            }.navigationTitle(t("连接记录", "Connection history", "接続履歴")).toolbar {
+                ToolbarItem(placement: .topBarTrailing) { Button(t("清空", "Clear", "消去")) { model.clearHistory() }.disabled(model.history.isEmpty) }
             }
         }.preferredColorScheme(.dark)
     }
 
     private var settingsSheet: some View {
         NavigationStack {
-            Form { Picker(t("界面语言", "Language"), selection: $model.language) { ForEach(AppLanguage.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented) }
-                .navigationTitle(t("设置", "Settings"))
+            Form { Picker(t("界面语言", "Language", "表示言語"), selection: $model.language) { ForEach(AppLanguage.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented) }
+                .navigationTitle(t("设置", "Settings", "設定"))
         }.presentationDetents([.medium]).preferredColorScheme(.dark)
     }
 }

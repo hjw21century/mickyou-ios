@@ -48,7 +48,7 @@ final class AppModel: ObservableObject {
         if let server { targetName = server.name; targetHost = server.host; targetPort = server.port }
         else {
             guard !host.isEmpty, (1...65_535).contains(port) else {
-                state = .failed(language == .chinese ? "请输入有效的电脑地址和端口" : "Enter a valid computer address and port"); return
+                state = .failed(language == .chinese ? "请输入有效的电脑地址和端口" : language == .japanese ? "有効なパソコンのアドレスとポートを入力してください" : "Enter a valid computer address and port"); return
             }
             UserDefaults.standard.set(host, forKey: "serverHost")
             UserDefaults.standard.set(port, forKey: "serverPort")

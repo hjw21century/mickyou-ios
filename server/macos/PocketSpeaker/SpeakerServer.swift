@@ -1,7 +1,7 @@
 import Foundation
 import Network
 
-enum DesktopLanguage: String, CaseIterable, Identifiable, Codable { case chinese, english; var id: String { rawValue }; var title: String { self == .chinese ? "简体中文" : "English" } }
+enum DesktopLanguage: String, CaseIterable, Identifiable, Codable { case chinese, english, japanese; var id: String { rawValue }; var title: String { switch self { case .chinese: "简体中文"; case .english: "English"; case .japanese: "日本語" } } }
 struct DesktopConnectionRecord: Identifiable, Codable { let id: UUID; let client: String; let date: Date }
 
 @MainActor final class SpeakerServer: ObservableObject {
