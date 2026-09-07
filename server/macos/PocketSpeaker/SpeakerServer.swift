@@ -3,7 +3,7 @@ import Network
 
 @MainActor final class SpeakerServer: ObservableObject {
     @Published var running = false; @Published var connected = false; @Published var level = 0.0; @Published var error: String?
-    let port: UInt16 = 8554
+    @Published var port: UInt16 = 8679
     var address: String { Host.current().addresses.first { $0.contains(".") && !$0.hasPrefix("127.") } ?? "localhost" }
     private var listener: NWListener?; private var client: Client?; private var capture: SystemAudioCapture?
     func start() {

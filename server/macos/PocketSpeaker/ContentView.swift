@@ -15,11 +15,16 @@ struct ContentView: View {
                 }
                 Text(server.connected ? "手机已连接" : server.running ? "等待手机连接" : "准备就绪").font(.title.bold())
                 Text(server.running ? "\(server.address):\(server.port)" : "将电脑声音无线播放到手机").foregroundStyle(.secondary)
+                HStack {
+                    Text("端口").foregroundStyle(.secondary)
+                    TextField("8679", value: $server.port, format: .number)
+                        .textFieldStyle(.roundedBorder).frame(width: 100).disabled(server.running)
+                }
                 HStack(spacing: 8) { ForEach(0..<18, id: \.self) { i in Capsule().fill(Double(i) / 18 < server.level ? AnyShapeStyle(LinearGradient(colors: [.cyan, .purple], startPoint: .bottom, endPoint: .top)) : AnyShapeStyle(.white.opacity(0.08))).frame(width: 10, height: CGFloat(12 + (i % 5) * 5)) } }
                 Button { server.running ? server.stop() : server.start() } label: { Label(server.running ? "停止服务" : "开始共享声音", systemImage: server.running ? "stop.fill" : "play.fill").frame(width: 220).padding(.vertical, 8) }
                     .buttonStyle(.borderedProminent).tint(server.running ? .red.opacity(0.8) : .indigo)
                 if let error = server.error { Text(error).font(.caption).foregroundStyle(.red).multilineTextAlignment(.center) }
             }.padding(34)
-        }.frame(width: 520, height: 600).preferredColorScheme(.dark)
+        }.frame(width: 520, height: 640).preferredColorScheme(.dark)
     }
 }

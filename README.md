@@ -41,7 +41,7 @@ xcodebuild \
 
 如果本机没有 `iPhone 15` 模拟器，可通过 `xcrun simctl list devices available` 查询并替换设备名称。模拟器仅用于界面和协议测试，扬声器及局域网串流仍应在真机验证。
 
-首次连接时需允许“本地网络”权限。电脑端选择 Wi-Fi 模式后，可从发现列表连接；也可手动输入电脑 IP（默认 TCP 端口 `8554`）。电脑音频以 48 kHz/16-bit/单声道 PCM 通过 TCP 发送到手机。
+首次连接时需允许“本地网络”权限。可从发现列表连接，也可手动输入电脑 IP（默认 TCP 端口 `8679`）；意外断线后手机会自动重连。电脑音频以 48 kHz/16-bit/单声道 PCM 通过 TCP 发送到手机。
 
 macOS 原生服务端通过 ScreenCaptureKit 捕获系统音频，无需 BlackHole 或多输出设备。Windows 原生服务端通过 WASAPI loopback 捕获默认输出设备。
 

@@ -14,4 +14,4 @@ Windows 客户端采用 WinUI 3 界面，通过 WASAPI loopback 捕获默认输�
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\server\windows\build.ps1
 ```
 
-启动后允许 Windows 防火墙的专用网络访问，在 iPhone 中填写界面显示的 IPv4 地址和端口 `8554`。
+启动前可选择需要捕获的电脑输出设备。允许 Windows 防火墙的专用网络访问，在 iPhone 中填写界面显示的 IPv4 地址和端口 `8679`。

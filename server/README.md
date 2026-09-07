@@ -20,4 +20,4 @@ chmod +x build.sh
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\server\windows\build.ps1
 ```
 
-电脑和 iPhone 需位于同一局域网。桌面端启动共享后，在手机端选择发现的电脑；Windows 暂时需要手动输入界面显示的 IPv4 地址，默认端口为 `8554`。
+电脑和 iPhone 需位于同一局域网。桌面端启动共享后，在手机端选择发现的电脑；Windows 可选择需要捕获的输出设备，并手动输入界面显示的 IPv4 地址，默认端口为 `8679`。
